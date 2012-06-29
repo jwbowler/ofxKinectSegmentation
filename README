@@ -1,0 +1,76 @@
+ofxKinectSegmentation
+John Bowler, Seth Hunter, Roy Shilkrot
+
+
+
+
+This is a set of methods for segmenting a RGB+depth image, such as from a Kinect: that is, separating the foreground (people standing in front of Kinect) from the background (the objects and walls of the room behind them). The simplest way to achieve this is by thresholding the depth image. The Kinect depth sensor is fairly noisy, however, so these methods use image processing techniques on the RGB image to refine the segmentation and get more precise and accurate contours.
+
+
+
+
+=== REQUIREMENTS AND USAGE ===
+
+This release includes source files and an example (an Xcode project - only tried on OSX).
+
+The extension itself depends on:
+	ofxOpenCv
+	
+Additional dependencies for the example project (including sub-dependencies):
+	ofxControlPanel*
+		ofxDirList
+		ofxXmlSettings
+	ofxOpenNI
+	
+*If you get a compiler error in two files in the ofxControlPanel source about a "bLoaded" variable not being public, find/replace it in the .cpp files with "isLoaded()".
+
+Declare an ofxKinectSegmentation object in your header and init() it. There are three methods for processing images, each taking as input an RGB image, a depth image, and a pointer to the result in whatever form you desire:
+
+void getMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
+	Loads *output with a grayscale image that, if applied to an image as an alpha channel, would segment the image.
+
+void getRGB(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvColorImage *output);
+	Loads *output with a color image where the "background" of the original image is black.
+
+void getRGBA(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofImage *output);
+	Loads *output with a 4-channel ofImage where the alpha channel masks out the background.
+	
+	
+	
+
+=== TECHNICAL DESCRIPTION ===
+
+[Parameters in brackets] are sliders that can be played with in the example project and are also public variables of the ofxKinectSegmentation object that can be adjusted to taste.
+
+
+Step 1) Acquire contours from the depth image (using ofxCvContourFinder), with choices of [min contour area], [max contour area], and [max num contours] that prevent holes or other artifacts of IR sensor noise from being detected as meaningful objects.
+
+First pass: RGB edge detection
+
+Step 2) Partition the image into a "known foreground" (set of FG pixels far enough away from the foreground), a "known background", and a stripe-like "unknown area" between them. The width of the unknown area is [1st-pass search breadth].
+
+Step 3) Construct square "boxes" around every contour point, with size [1st-pass ROI box size] and spaced at around [ROI box sparsity] pixels apart, to be iterated through and used as ROI's.
+
+Step 4) Run the RGB through an edge-detection algorithm, generating an edge image (where the value of each pixel is how fast it is changing color in the RGB image). Mask out everything except the edges in the unknown area stripe.
+
+Step 5) Construct a new contour, iterating through boxes and getting one new contour point from each box by finding the centroid of the edge image in each box ROI. This is analogous to a single iteration of meanshift. Theoretically, this creates a new contour that hugs the edge detected on the RGB image tighter.
+
+Second pass: Color matching
+
+Step 6) Repeat steps 2 and 3 with the new contour, using the [2nd-pass search breadth] and [2nd-pass ROI box size] parameters.
+
+Step 7) In each box ROI, consider the colors of the known FG and known BG pixels in that region and make a determination on each unknown pixel based on its color and the statistical likelihood of it being either FG or BG.
+
+Touch-up:
+
+Step 8) Erode and blur the final mask according to [final alpha erosion] and [final alpha blur].
+
+
+Note on step 7 - This determination is implemented in the simplest possible way: considering a single color channel, finding the average values in the known FG and BG regions within this ROI, and thresholding the unknown area at (FG_avg + BG_avg)/2. A more sophisticated and probably better-looking method would consider the whole 3D space, model the pixel colors in the FG and BG as Gaussian distributions based on their means and covariance matrices, and check each unknown pixel independently for its statistical distance from each distribution. (Edge detection, similarly, considers only a single color channel.)
+
+
+
+
+
+June 29, 2012
+
