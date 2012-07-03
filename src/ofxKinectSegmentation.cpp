@@ -44,13 +44,21 @@ void ofxKinectSegmentation::init() {
     contourImg2.allocate(KW, KH);
 }
 
-void ofxKinectSegmentation::getMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output) {
+void ofxKinectSegmentation::getBitMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output) {
+    bBlur = false;
+    helper(rgbImage, depthImage);
+    cvCopy(finalMask.getCvImage(), output->getCvImage());
+}
+
+void ofxKinectSegmentation::getGrayscaleMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output) {
+    bBlur = true;
     helper(rgbImage, depthImage);
     cvCopy(finalMask.getCvImage(), output->getCvImage());
 }
 
 
 void ofxKinectSegmentation::getRGB(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvColorImage *output) {
+    bBlur = true;
     helper(rgbImage, depthImage);
     cvCvtColor(finalMask.getCvImage(), finalMaskInRgb.getCvImage(), CV_GRAY2RGB);
     cvAnd(rgbSample.getCvImage(), finalMaskInRgb.getCvImage(), final.getCvImage());
@@ -58,6 +66,7 @@ void ofxKinectSegmentation::getRGB(ofxCvColorImage rgbImage, ofxCvGrayscaleImage
 
 
 void ofxKinectSegmentation::getRGBA(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofImage *output) {
+    bBlur = true;
     helper(rgbImage, depthImage);
     cvSplit(rgbSample.getCvImage(), finalC1, finalC2, finalC3, NULL);
     cvMerge(finalC1, finalC2, finalC3, finalMask.getCvImage(), finalRGBA);
@@ -200,10 +209,13 @@ void ofxKinectSegmentation::helper(ofxCvColorImage rgbImage, ofxCvGrayscaleImage
     cvAnd(finalMask1.getCvImage(), irErodedBG.getCvImage(), finalMask2.getCvImage());
     irErodedBG.invert();
     
-    // blur edges
-    cvErode(finalMask2.getCvImage(), finalMask1.getCvImage(), NULL, finalAlphaErosion);
-    cvSmooth(finalMask1.getCvImage(), finalMask.getCvImage(), CV_BLUR, 2*finalAlphaBlur + 1);
-    //cvCopy(finalMask2.getCvImage(), finalMask.getCvImage());
+    if (bBlur) {
+        // blur edges
+        cvErode(finalMask2.getCvImage(), finalMask1.getCvImage(), NULL, finalAlphaErosion);
+        cvSmooth(finalMask1.getCvImage(), finalMask.getCvImage(), CV_BLUR, 2*finalAlphaBlur + 1);
+    } else {
+        cvCopy(finalMask2.getCvImage(), finalMask.getCvImage());
+    }
     
     while (!blobCentroids.empty()) {
         blobCentroids.pop();

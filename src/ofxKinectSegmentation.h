@@ -8,7 +8,8 @@ public:
     ofxKinectSegmentation();
     void init();
     
-    void getMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
+    void getBitMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
+    void getGrayscaleMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
     void getRGB(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvColorImage *output);
     void getRGBA(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofImage *output);
     
@@ -18,6 +19,7 @@ public:
     int minContourArea;
     int maxContourArea;
     int maxNumContours;
+    int extraForegroundErosion;
     int edgeSearchAreaWidth;
     int colorSearchAreaWidth;
     int boxSize2;
@@ -29,6 +31,8 @@ public:
 private:
     
     void helper(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage);
+    
+    Boolean bBlur;
     
     vector<ofRectangle> getBoxes();
     int numBoxes;

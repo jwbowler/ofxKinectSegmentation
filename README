@@ -26,8 +26,11 @@ Additional dependencies for the example project (including sub-dependencies):
 
 Declare an ofxKinectSegmentation object in your header and init() it. There are three methods for processing images, each taking as input an RGB image, a depth image, and a pointer to the result in whatever form you desire:
 
-void getMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
+void getGrayscaleMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
 	Loads *output with a grayscale image that, if applied to an image as an alpha channel, would segment the image.
+	
+void getBitMask(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvGrayscaleImage *output);
+	Like getGrayscaleMask() but binary, without the extra blur around the edges.
 
 void getRGB(ofxCvColorImage rgbImage, ofxCvGrayscaleImage depthImage, ofxCvColorImage *output);
 	Loads *output with a color image where the "background" of the original image is black.
